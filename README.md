@@ -44,3 +44,9 @@ gcc -Wall -Wextra -O2 -o bin/snake.exe src/snake.c
 - 撞到墙壁(`#`)或撞到自己即游戏结束;
 - 蛇越长移动速度越快(帧间隔从 130ms 递减至 50ms);
 - 蛇身填满整个场地即获胜。
+
+## 更新日志
+
+每次代码修改后均需同步更新 [CHANGELOG.md](CHANGELOG.md),
+记录新增功能与修复的 bug。
+

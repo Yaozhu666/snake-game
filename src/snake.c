@@ -155,9 +155,11 @@ static int step(void) {
         if (nx == snakeX[i] && ny == snakeY[i]) return 0;
     }
 
-    /* 擦掉旧尾巴 */
-    gotoxy(snakeX[snakeLen - 1], snakeY[snakeLen - 1]);
-    putchar(' ');
+    /* 只有没吃到食物时才擦掉旧尾巴(吃到时旧尾保留, 蛇身变长, 否则会缺一块) */
+    if (!(nx == foodX && ny == foodY)) {
+        gotoxy(snakeX[snakeLen - 1], snakeY[snakeLen - 1]);
+        putchar(' ');
+    }
 
     /* 蛇身前移 */
     for (i = snakeLen - 1; i > 0; i--) {
@@ -167,7 +169,7 @@ static int step(void) {
     snakeX[0] = nx;
     snakeY[0] = ny;
 
-    /* 吃到食物: 尾巴不擦, 长度+1 */
+    /* 吃到食物: 长度+1 */
     if (nx == foodX && ny == foodY) {
         snakeLen++;
         score += 10;
@@ -189,6 +191,7 @@ static int step(void) {
 int main(void) {
     srand((unsigned)time(NULL));
     hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    setupConsole();
     initGame();
 
     while (1) {
