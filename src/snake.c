@@ -201,10 +201,18 @@ int main(void) {
         Sleep(speed);
     }
 
-    gotoxy(WIDTH / 2 - 5, HEIGHT / 2);
-    printf("Game Over! Score: %d", score);
-    gotoxy(WIDTH / 2 - 8, HEIGHT / 2 + 1);
-    printf("按任意键退出...");
-    while (!kbhit()) Sleep(50);
+    /* 结算画面: 居中显示, 分数清晰可见 */
+    gotoxy(WIDTH / 2 - 5, HEIGHT / 2 - 1);
+    printf("Game Over!");
+    gotoxy(WIDTH / 2 - 8, HEIGHT / 2);
+    printf("最终得分: %d", score);
+    gotoxy(WIDTH / 2 - 9, HEIGHT / 2 + 1);
+    printf("按 Q 键退出游戏...");
+
+    /* 只有按 Q 键才退出, 避免误触其他按键直接跳过结算画面 */
+    while (1) {
+        if (kbhit() && (getch() == 'q' || getch() == 'Q')) break;
+        Sleep(50);
+    }
     return 0;
 }
