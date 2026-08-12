@@ -91,6 +91,7 @@ static void spawnFood(void) {
 /* 初始化: 蛇在中间, 朝右 */
 static void initGame(void) {
     int i, cx, cy;
+    snakeLen = 3;          /* 每局都从 3 节开始 */
     cx = WIDTH / 2;
     cy = HEIGHT / 2;
     for (i = 0; i < snakeLen; i++) {
@@ -189,30 +190,38 @@ static int step(void) {
 }
 
 int main(void) {
+    int again = 1;
     srand((unsigned)time(NULL));
     hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     setupConsole();
-    initGame();
 
-    while (1) {
-        handleInput();
-        if (!step()) break;              /* 撞墙或撞到自己 */
-        if (snakeLen >= MAX_LEN) break;  /* 蛇充满屏幕, 胜利 */
-        Sleep(speed);
-    }
+    while (again) {
+        initGame();
 
-    /* 结算画面: 居中显示, 分数清晰可见 */
-    gotoxy(WIDTH / 2 - 5, HEIGHT / 2 - 1);
-    printf("Game Over!");
-    gotoxy(WIDTH / 2 - 8, HEIGHT / 2);
-    printf("最终得分: %d", score);
-    gotoxy(WIDTH / 2 - 9, HEIGHT / 2 + 1);
-    printf("按 Q 键退出游戏...");
+        while (1) {
+            handleInput();
+            if (!step()) break;              /* 撞墙或撞到自己 */
+            if (snakeLen >= MAX_LEN) break;  /* 蛇充满屏幕, 胜利 */
+            Sleep(speed);
+        }
 
-    /* 只有按 Q 键才退出, 避免误触其他按键直接跳过结算画面 */
-    while (1) {
-        if (kbhit() && (getch() == 'q' || getch() == 'Q')) break;
-        Sleep(50);
+        /* 结算画面: 居中显示, 分数清晰可见 */
+        gotoxy(WIDTH / 2 - 5, HEIGHT / 2 - 1);
+        printf("Game Over!");
+        gotoxy(WIDTH / 2 - 8, HEIGHT / 2);
+        printf("最终得分: %d", score);
+        gotoxy(WIDTH / 2 - 11, HEIGHT / 2 + 1);
+        printf("按 R 开始新一局, 按 Q 退出游戏");
+
+        /* 只有按 R/Q 才响应, 避免误触其他按键直接跳过结算画面 */
+        while (1) {
+            if (kbhit()) {
+                int c = getch();
+                if (c == 'r' || c == 'R') break;                       /* 再来一局 */
+                if (c == 'q' || c == 'Q') { again = 0; break; }        /* 退出游戏 */
+            }
+            Sleep(50);
+        }
     }
     return 0;
 }

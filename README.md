@@ -36,7 +36,8 @@ gcc -Wall -Wextra -O2 -o bin/snake.exe src/snake.c
 |---|---|
 | WASD / 方向键 | 控制蛇头移动 |
 | 空格 Space | 暂停 / 继续 |
-| Q 或 Esc | 退出游戏 |
+| R | 游戏结束后重新开始新一局 |
+| Q 或 Esc | 退出游戏(游戏中直接退出;结算画面按 Q 退出) |
 
 ## 游戏规则
 
