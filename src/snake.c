@@ -10,7 +10,7 @@
 #include <conio.h>
 #include <windows.h>
 
-#define WIDTH  40                 /* 地图宽度(格) */
+#define WIDTH  30                 /* 地图宽度(格): 控制台字符竖长(高≈2倍宽), 用 30x20 视觉更协调 */
 #define HEIGHT 20                 /* 地图高度(格) */
 #define MAX_LEN (WIDTH * HEIGHT)  /* 蛇身最大长度 */
 
@@ -39,7 +39,7 @@ static void hideCursor(void) {
     SetConsoleCursorInfo(hOut, &ci);
 }
 
-/* 设置控制台: ①UTF-8 输出修复中文乱码 ②窗口/缓冲区尺寸贴合地图, 消除大片空白 */
+/* 设置控制台: ①UTF-8 输出修复中文乱码 ②尽力把窗口/缓冲区调成贴合地图(CMD/PowerShell 生效, Git Bash 等终端无效也无妨) */
 static void setupConsole(void) {
     COORD bufSize, maxBuf;
     SMALL_RECT win;
@@ -48,12 +48,12 @@ static void setupConsole(void) {
     /* 源码是 UTF-8, 而 Windows 控制台默认 GBK(代码页 936), 需切换为 UTF-8 才不会乱码 */
     SetConsoleOutputCP(CP_UTF8);
 
-    /* 目标: 缓冲区 = 窗口 = 地图(40x20) + 边框(2) + 状态栏与边距 */
-    bufSize.X = WIDTH + 4;   /* 44 */
+    /* 目标: 缓冲区 = 窗口 = 地图(30x20) + 边框(2) + 状态栏与边距 */
+    bufSize.X = WIDTH + 4;   /* 34 */
     bufSize.Y = HEIGHT + 6;  /* 26 */
     win.Left = 0;
     win.Top = 0;
-    win.Right = (SHORT)(WIDTH + 3);   /* 43 */
+    win.Right = (SHORT)(WIDTH + 3);   /* 33 */
     win.Bottom = (SHORT)(HEIGHT + 5); /* 25 */
 
     /* 窗口若处于最大化状态, 尺寸设置不会生效, 先还原 */
@@ -61,26 +61,28 @@ static void setupConsole(void) {
     if (hwnd) ShowWindow(hwnd, SW_RESTORE);
 
     /* 顺序很关键: ①先把缓冲区扩到当前字体允许的最大值,
-       ②再设置窗口尺寸, ③最后把缓冲区收缩到与窗口一致(消除滚动条) */
+       ②再设置窗口尺寸, ③最后把缓冲区收缩到与窗口一致(消除滚动条)。
+       在 Git Bash(mintty)等终端中这些 API 不生效, 但调用无害, 游戏照常可玩 */
     maxBuf = GetLargestConsoleWindowSize(hOut);
     SetConsoleScreenBufferSize(hOut, maxBuf);
     SetConsoleWindowInfo(hOut, TRUE, &win);
     SetConsoleScreenBufferSize(hOut, bufSize);
 }
 
-/* 校验窗口是否真正缩到目标尺寸; 未生效时在底部给出提示 */
+/* 校验窗口: 仅当窗口小到地图显示不全时才提示; 窗口更大(留白)则不打扰,
+   兼容 CMD / PowerShell / Git Bash 等不同终端 */
 static void checkWindow(void) {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     int w, h;
     if (!GetConsoleScreenBufferInfo(hOut, &csbi)) return;
     w = csbi.srWindow.Right - csbi.srWindow.Left + 1;
     h = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-    if (w == WIDTH + 4 && h == HEIGHT + 6) return;
+    if (w >= WIDTH + 2 && h >= HEIGHT + 4) return;  /* 能完整放下地图+边框+状态栏即可 */
 
     gotoxy(0, HEIGHT + 4);
-    printf("窗口未缩到目标尺寸(当前 %dx%d)", w, h);
+    printf("窗口过小(当前 %dx%d), 地图显示不全", w, h);
     gotoxy(0, HEIGHT + 5);
-    printf("提示: 右键标题栏 -> 默认值 -> 调小字体后重试");
+    printf("提示: 调大窗口或调小终端字体后再开始");
 }
 
 /* 绘制游戏边框 */
@@ -136,7 +138,7 @@ static void initGame(void) {
     }
     spawnFood();
     gotoxy(0, HEIGHT + 3);
-    printf("Score: %d    WASD/方向键移动  Space暂停  Q退出", score);
+    printf("Score: %d    WASD/方向键移动  Space/Q暂停  R重开", score);
 }
 
 /* 读取键盘输入(兼容方向键两字节扫描码) */
@@ -158,8 +160,7 @@ static void handleInput(void) {
                 case 's': case 'S': if (!dirY) { dirX = 0;  dirY = 1;  } break;
                 case 'a': case 'A': if (!dirX) { dirX = -1; dirY = 0;  } break;
                 case 'd': case 'D': if (!dirX) { dirX = 1;  dirY = 0;  } break;
-                case ' ': paused = !paused; break;
-                case 'q': case 'Q': case 27: exit(0);
+                case ' ': case 'q': case 'Q': case 27: paused = !paused; break;
             }
         }
     }
@@ -203,7 +204,7 @@ static int step(void) {
         spawnFood();
         if (snakeLen > 5 && speed > 50) speed -= 5;   /* 越长越快 */
         gotoxy(0, HEIGHT + 3);
-        printf("Score: %d    WASD/方向键移动  Space暂停  Q退出", score);
+        printf("Score: %d    WASD/方向键移动  Space/Q暂停  R重开", score);
     }
 
     /* 画新头(保持蛇身连贯) */
