@@ -14,8 +14,8 @@
 #define HEIGHT 20                 /* 地图高度(格) */
 #define MAX_LEN (WIDTH * HEIGHT)  /* 蛇身最大长度 */
 
-/* 蛇身坐标数组, snake[0] 为蛇头 */
-static int snakeX[MAX_LEN], snakeY[MAX_LEN];
+/* 蛇身坐标数组, snake[0] 为蛇头; +1 冗余槽: 吃食物前移时需写入 snake[snakeLen] */
+static int snakeX[MAX_LEN + 1], snakeY[MAX_LEN + 1];
 static int snakeLen = 3;
 static int dirX = 1, dirY = 0;    /* 当前方向 */
 static int foodX, foodY;
@@ -187,8 +187,9 @@ static int step(void) {
         putchar(' ');
     }
 
-    /* 蛇身前移 */
-    for (i = snakeLen - 1; i > 0; i--) {
+    /* 蛇身前移: 从 snakeLen 开始整体移位, 吃食物时旧尾自动保留为新尾(存入冗余槽),
+       避免数组尾部残留未初始化坐标导致误擦地图 */
+    for (i = snakeLen; i > 0; i--) {
         snakeX[i] = snakeX[i - 1];
         snakeY[i] = snakeY[i - 1];
     }
