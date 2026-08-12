@@ -41,21 +41,46 @@ static void hideCursor(void) {
 
 /* 设置控制台: ①UTF-8 输出修复中文乱码 ②窗口/缓冲区尺寸贴合地图, 消除大片空白 */
 static void setupConsole(void) {
-    COORD bufSize;
+    COORD bufSize, maxBuf;
     SMALL_RECT win;
+    HWND hwnd;
 
     /* 源码是 UTF-8, 而 Windows 控制台默认 GBK(代码页 936), 需切换为 UTF-8 才不会乱码 */
     SetConsoleOutputCP(CP_UTF8);
 
-    /* 缓冲区 = 窗口 = 地图(40x20) + 边框(2) + 状态栏与边距, 关闭滚动条 */
-    bufSize.X = WIDTH + 4;
-    bufSize.Y = HEIGHT + 6;
+    /* 目标: 缓冲区 = 窗口 = 地图(40x20) + 边框(2) + 状态栏与边距 */
+    bufSize.X = WIDTH + 4;   /* 44 */
+    bufSize.Y = HEIGHT + 6;  /* 26 */
     win.Left = 0;
     win.Top = 0;
-    win.Right = (SHORT)(WIDTH + 3);
-    win.Bottom = (SHORT)(HEIGHT + 5);
-    SetConsoleScreenBufferSize(hOut, bufSize);
+    win.Right = (SHORT)(WIDTH + 3);   /* 43 */
+    win.Bottom = (SHORT)(HEIGHT + 5); /* 25 */
+
+    /* 窗口若处于最大化状态, 尺寸设置不会生效, 先还原 */
+    hwnd = GetConsoleWindow();
+    if (hwnd) ShowWindow(hwnd, SW_RESTORE);
+
+    /* 顺序很关键: ①先把缓冲区扩到当前字体允许的最大值,
+       ②再设置窗口尺寸, ③最后把缓冲区收缩到与窗口一致(消除滚动条) */
+    maxBuf = GetLargestConsoleWindowSize(hOut);
+    SetConsoleScreenBufferSize(hOut, maxBuf);
     SetConsoleWindowInfo(hOut, TRUE, &win);
+    SetConsoleScreenBufferSize(hOut, bufSize);
+}
+
+/* 校验窗口是否真正缩到目标尺寸; 未生效时在底部给出提示 */
+static void checkWindow(void) {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    int w, h;
+    if (!GetConsoleScreenBufferInfo(hOut, &csbi)) return;
+    w = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    h = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    if (w == WIDTH + 4 && h == HEIGHT + 6) return;
+
+    gotoxy(0, HEIGHT + 4);
+    printf("窗口未缩到目标尺寸(当前 %dx%d)", w, h);
+    gotoxy(0, HEIGHT + 5);
+    printf("提示: 右键标题栏 -> 默认值 -> 调小字体后重试");
 }
 
 /* 绘制游戏边框 */
@@ -197,6 +222,7 @@ int main(void) {
 
     while (again) {
         initGame();
+        checkWindow();
 
         while (1) {
             handleInput();
