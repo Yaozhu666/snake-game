@@ -1,0 +1,12 @@
+# 编译产物
+bin/
+build/
+*.exe
+*.o
+
+# 编辑器 / 系统文件
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
